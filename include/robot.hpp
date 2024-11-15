@@ -27,15 +27,18 @@ namespace robots {
         virtual std::vector<double> getEnclosingRadii(const Eigen::VectorXd& qk) = 0;
         virtual double getMaxDisplacement(const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) = 0;
 
+        Eigen::VectorXd getCurrentConfiguration() const;
+        void setConfiguration(const Eigen::VectorXd& q);
+        const drake::planning::CollisionChecker& getCollisionChecker() const;
+        const drake::multibody::MultibodyPlant<double>& getPlant() const;
+        const std::reference_wrapper<const drake::systems::Context<double>>& getPlantContext() const;
+
     protected:
         const std::vector<std::reference_wrapper<const drake::multibody::RigidBody<double>>>& jointChildAndEndEffectorLinks;
         const std::vector<double> linkGeometryCompensation;
         const drake::planning::CollisionChecker& collisionChecker;
         const drake::multibody::MultibodyPlant<double>& plant;
         std::reference_wrapper<const drake::systems::Context<double>> plantContext;
-
-        Eigen::VectorXd getCurrentConfiguration() const;
-        void setConfiguration(const Eigen::VectorXd& q);
     };
 
 
@@ -46,6 +49,18 @@ namespace robots {
 
     inline void Robot::setConfiguration(const Eigen::VectorXd& q) {
         plantContext = collisionChecker.UpdatePositions(q);
+    }
+
+    inline const drake::planning::CollisionChecker& Robot::getCollisionChecker() const {
+        return collisionChecker;
+    }
+
+    inline const drake::multibody::MultibodyPlant<double>& Robot::getPlant() const {
+        return plant;
+    }
+
+    inline const std::reference_wrapper<const drake::systems::Context<double>>& Robot::getPlantContext() const {
+        return plantContext;
     }
 }
 }
