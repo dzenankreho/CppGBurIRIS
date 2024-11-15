@@ -18,6 +18,7 @@
 
 #include "visualization.hpp"
 #include "planar_arm.hpp"
+#include "generalized_bur.hpp"
 
 
 int main() {
