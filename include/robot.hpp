@@ -32,6 +32,7 @@ namespace robots {
         const drake::planning::CollisionChecker& getCollisionChecker() const;
         const drake::multibody::MultibodyPlant<double>& getPlant() const;
         const std::reference_wrapper<const drake::systems::Context<double>>& getPlantContext() const;
+        const std::vector<double>& getLinkGeometryCompensation() const;
 
     protected:
         const std::vector<std::reference_wrapper<const drake::multibody::RigidBody<double>>>& jointChildAndEndEffectorLinks;
@@ -62,5 +63,10 @@ namespace robots {
     inline const std::reference_wrapper<const drake::systems::Context<double>>& Robot::getPlantContext() const {
         return plantContext;
     }
+
+    inline const std::vector<double>& Robot::getLinkGeometryCompensation() const {
+        return linkGeometryCompensation;
+    }
+
 }
 }

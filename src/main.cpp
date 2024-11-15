@@ -21,6 +21,7 @@
 #include "generalized_bur.hpp"
 
 
+
 int main() {
     drake::planning::RobotDiagramBuilder<double> robotDiagramBuilder;
     drake::multibody::MultibodyPlant<double>& plant{ robotDiagramBuilder.plant() };
