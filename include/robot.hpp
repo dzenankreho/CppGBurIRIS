@@ -3,6 +3,7 @@
 #include <vector>
 #include <functional>
 
+#include <drake/systems/framework/context.h>
 #include <drake/planning/collision_checker.h>
 #include <drake/multibody/tree/rigid_body.h>
 
@@ -15,37 +16,36 @@ namespace robots {
 
     class Robot {
 
-    protected:
-        const drake::planning::CollisionChecker& collisionChecker;
-        const std::vector<std::reference_wrapper<const drake::multibody::RigidBody<double>>>& jointChildAndEndEffectorLinks;
-        const std::vector<double> linkGeometryCompensation;
-
     public:
         Robot(
             const drake::planning::CollisionChecker& collisionChecker,
             const std::vector<std::reference_wrapper<const drake::multibody::RigidBody<double>>>& jointChildAndEndEffectorLinks,
             const std::vector<double>& linkGeometryCompensation
         );
-
         virtual ~Robot() = default;
+        virtual std::vector<Eigen::Vector2d> getLinkPositions(const Eigen::VectorXd& qk) = 0;
+        virtual std::vector<double> getEnclosingRadii(const Eigen::VectorXd& qk) = 0;
+        virtual double getMaxDisplacement(const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) = 0;
 
-        virtual std::vector<Eigen::Vector2d> getLinkPositions(const Eigen::VectorXd& qk) const = 0;
+    protected:
+        const std::vector<std::reference_wrapper<const drake::multibody::RigidBody<double>>>& jointChildAndEndEffectorLinks;
+        const std::vector<double> linkGeometryCompensation;
+        const drake::planning::CollisionChecker& collisionChecker;
+        const drake::multibody::MultibodyPlant<double>& plant;
+        std::reference_wrapper<const drake::systems::Context<double>> plantContext;
 
-//         virtual std::vector<double> getEnclosingRadii(const Eigen::VectorXd& qk) const = 0;
-//
-//         virtual double getMaxDisplacement(const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) const = 0;
-//
-//         virtual std::vector<double> compensateForLinkGeometry(
-//             const std::vector<double>& distances,
-//             LinkGeometryCompensationType linkGeometryCompensationType
-//         ) const = 0;
-//
-//         virtual double compensateForLinkGeometry(
-//             int linkNumber,
-//             double distances,
-//             LinkGeometryCompensationType linkGeometryCompensationType
-//         ) const = 0;
+        Eigen::VectorXd getCurrentConfiguration() const;
+        void setConfiguration(const Eigen::VectorXd& q);
     };
 
+
+    inline Eigen::VectorXd Robot::getCurrentConfiguration() const {
+        return plant.GetPositions(plantContext);
+    }
+
+
+    inline void Robot::setConfiguration(const Eigen::VectorXd& q) {
+        plantContext = collisionChecker.UpdatePositions(q);
+    }
 }
 }

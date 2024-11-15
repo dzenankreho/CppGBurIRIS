@@ -62,10 +62,18 @@ int main() {
 
     GBurIRIS::robots::PlanarArm planarArm(*collisionChecker, jointChildAndEndEffectorLinks, linkGeometryCompensation);
 
-    for (auto&& pos : planarArm.getLinkPositions(Eigen::Vector2d(0, -1.57))) {
+    auto&& config1{ Eigen::Vector2d(0, 3.14) }, config2{ Eigen::Vector2d(0, -1.57) };
+
+    for (auto&& pos : planarArm.getLinkPositions(config1)) {
         std::cout << pos << std::endl;
     }
 
+    for (auto&& radius : planarArm.getEnclosingRadii(config1)) {
+        std::cout << radius << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << planarArm.getMaxDisplacement(config1, config2) << std::endl;
 
 
 //     robots::Robot robot(*collisionChecker, std::vector<std::shared>);
