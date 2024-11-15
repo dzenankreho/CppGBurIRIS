@@ -14,6 +14,8 @@ find_package(Python3 COMPONENTS NumPy REQUIRED)
 
 include_directories(include)
 
-add_executable(CppGBurIRIS src/visualization.cpp src/robot.cpp src/planar_arm.cpp src/main.cpp)
+file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
+
+add_executable(CppGBurIRIS ${SOURCES})
 
 target_link_libraries(CppGBurIRIS drake::drake Python3::Python Python3::Module Python3::NumPy)
