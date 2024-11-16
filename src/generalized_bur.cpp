@@ -5,6 +5,8 @@
 #include <cmath>
 #include <stdexcept>
 
+#include <iostream>
+
 GBurIRIS::GBur::GeneralizedBur::GeneralizedBur(
     const Eigen::VectorXd& qCenter,
     const GeneralizedBurConfig& generalizedBurConfig,
@@ -23,6 +25,9 @@ void GBurIRIS::GBur::GeneralizedBur::approximateObstaclesWithPlanes() {
     if (linkObstacleDistancePairs && linkObstaclePlanes) {
         return;
     }
+
+    linkObstacleDistancePairs = decltype(linkObstacleDistancePairs)::value_type();
+    linkObstaclePlanes =  decltype(linkObstaclePlanes)::value_type();
 
     auto&& collisionChecker{ robot.getCollisionChecker() };
     auto&& plant{ robot.getPlant() };
@@ -161,6 +166,7 @@ std::tuple<std::vector<Eigen::VectorXd>, std::vector<std::vector<Eigen::VectorXd
     auto&& qUpperBounds{ robot.getPlant().GetPositionUpperLimits() };
 
     if (!randomConfigs) {
+        randomConfigs = decltype(randomConfigs)::value_type();
         auto&& qSpaceWidth{ qUpperBounds - qLowerBounds };
         double maxDistanceConfigSpace{};
 
