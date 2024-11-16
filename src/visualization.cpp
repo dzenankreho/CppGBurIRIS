@@ -6,10 +6,10 @@
 #include "matplotlibcpp.h"
 
 
-visualization::Figure::Figure() : figureNumber{ matplotlibcpp::figure() } { }
+GBurIRIS::visualization::Figure::Figure() : figureNumber{ matplotlibcpp::figure() } { }
 
 
-void visualization::Figure::visualize2dConfigurationSpace(
+void GBurIRIS::visualization::Figure::visualize2dConfigurationSpace(
     const drake::planning::CollisionChecker& collisionChecker,
     const int numOfSamples,
     const std::optional<std::tuple<double, double, double, double>>& plotColor
@@ -50,7 +50,7 @@ void visualization::Figure::visualize2dConfigurationSpace(
 }
 
 
-void visualization::Figure::visualize2dConvexSet(
+void GBurIRIS::visualization::Figure::visualize2dConvexSet(
     const drake::multibody::MultibodyPlant<double>& plant,
     const drake::geometry::optimization::ConvexSet& set,
     const int numOfSamples,
@@ -95,6 +95,6 @@ void visualization::Figure::visualize2dConvexSet(
 }
 
 
-void visualization::Figure::showFigures() {
+void GBurIRIS::visualization::Figure::showFigures() {
     matplotlibcpp::show();
 }

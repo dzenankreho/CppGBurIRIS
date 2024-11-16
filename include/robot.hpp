@@ -9,8 +9,7 @@
 
 #include <Eigen/Dense>
 
-namespace GBurIRIS {
-namespace robots {
+namespace GBurIRIS::robots {
 
     enum class LinkGeometryCompensationType { positive, negative };
 
@@ -68,5 +67,4 @@ namespace robots {
         return linkGeometryCompensation;
     }
 
-}
 }

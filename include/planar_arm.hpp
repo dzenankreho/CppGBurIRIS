@@ -2,8 +2,7 @@
 
 #include "robot.hpp"
 
-namespace GBurIRIS {
-namespace robots {
+namespace GBurIRIS::robots {
 
     class PlanarArm final : public Robot {
 
@@ -18,5 +17,4 @@ namespace robots {
         double getMaxDisplacement(const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) override;
     };
 
-}
 }

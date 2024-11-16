@@ -10,8 +10,7 @@
 #include <tuple>
 
 
-namespace GBurIRIS {
-namespace GBur {
+namespace GBurIRIS::GBur {
 
     struct GeneralizedBurConfig {
         int numOfSpines{ 7 };
@@ -41,9 +40,7 @@ namespace GBur {
         std::optional<std::vector<Eigen::VectorXd>> randomConfigs{ std::nullopt };
         std::optional<double> minDistance{ std::nullopt };
         std::optional<std::vector<
-            std::tuple<
-                drake::multibody::BodyIndex, drake::multibody::BodyIndex, Eigen::Vector3d, Eigen::Vector3d, double
-            >
+            std::tuple<drake::multibody::BodyIndex, drake::multibody::BodyIndex, Eigen::Vector3d, Eigen::Vector3d, double>
         >> linkObstacleDistancePairs{ std::nullopt };
         std::optional<std::vector<Eigen::Vector4d>> linkObstaclePlanes{ std::nullopt };
         std::vector<std::vector<Eigen::VectorXd>> layers;
@@ -67,5 +64,4 @@ namespace GBur {
         return distance - robot.getMaxDisplacement(startingPoint, startingPoint + t * (qe - startingPoint));
     }
 
-}
 }

@@ -7,7 +7,7 @@
 #include <drake/multibody/plant/multibody_plant.h>
 #include <drake/geometry/optimization/hpolyhedron.h>
 
-namespace visualization {
+namespace GBurIRIS::visualization {
 
     class Figure {
         long figureNumber;
