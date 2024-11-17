@@ -36,12 +36,13 @@ namespace GBurIRIS::GBur {
         GeneralizedBurConfig getGeneralizedBurConfig() const;
         std::vector<std::vector<Eigen::VectorXd>> getLayers() const;
         void setRandomConfigs(const std::vector<Eigen::VectorXd>& randomConfigs);
+        Eigen::VectorXd getCenter() const;
 
     private:
         const Eigen::VectorXd qCenter;
-        const GeneralizedBurConfig& generalizedBurConfig;
+        const GeneralizedBurConfig generalizedBurConfig;
         robots::Robot& robot;
-        const std::function<Eigen::VectorXd ()>& randomConfigGenerator;
+        const std::function<Eigen::VectorXd ()> randomConfigGenerator;
         std::optional<std::vector<Eigen::VectorXd>> randomConfigs{ std::nullopt };
         std::optional<double> minDistance{ std::nullopt };
         std::optional<std::vector<
@@ -80,5 +81,9 @@ namespace GBurIRIS::GBur {
 
     inline void GeneralizedBur::setRandomConfigs(const std::vector<Eigen::VectorXd>& randomConfigs) {
         this->randomConfigs = randomConfigs;
+    }
+
+    inline Eigen::VectorXd GeneralizedBur::getCenter() const {
+        return qCenter;
     }
 }

@@ -34,7 +34,7 @@ namespace GBurIRIS::robots {
         const std::vector<double>& getLinkGeometryCompensation() const;
 
     protected:
-        const std::vector<std::reference_wrapper<const drake::multibody::RigidBody<double>>>& jointChildAndEndEffectorLinks;
+        const std::vector<std::reference_wrapper<const drake::multibody::RigidBody<double>>> jointChildAndEndEffectorLinks;
         const std::vector<double> linkGeometryCompensation;
         const drake::planning::CollisionChecker& collisionChecker;
         const drake::multibody::MultibodyPlant<double>& plant;

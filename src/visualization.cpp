@@ -175,7 +175,7 @@ void GBurIRIS::visualization::Figure::visualize2dGeneralizedBur(
         prevBurLayerInPixels = burLayerInPixels;
     }
 
-    auto qCenter{ gBur.getqCenter() };
+    auto qCenter{ gBur.getCenter() };
 
     std::vector<double> burCenterInPixels {
         (qCenter(0) - qLowerBounds(0)) / (qUpperBounds(0) - qLowerBounds(0)) * numOfSamples,
