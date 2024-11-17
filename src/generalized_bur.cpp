@@ -5,8 +5,6 @@
 #include <cmath>
 #include <stdexcept>
 
-#include <iostream>
-
 GBurIRIS::GBur::GeneralizedBur::GeneralizedBur(
     const Eigen::VectorXd& qCenter,
     const GeneralizedBurConfig& generalizedBurConfig,
@@ -180,46 +178,47 @@ std::tuple<std::vector<Eigen::VectorXd>, std::vector<std::vector<Eigen::VectorXd
             randomConfigs->push_back(qCenter + unitVec * 2 * maxDistanceConfigSpace);
         }
 
-        double initMinDistance{ getMinDistanceToCollision() };
+    }
 
-        for (int i{}; i < randomConfigs->size(); ++i) {
-            auto&& qe{ randomConfigs->at(i) };
-            auto startingPoint{ qCenter };
-            double minDistance{ initMinDistance };
+    double initMinDistance{ getMinDistanceToCollision() };
 
-            for (int j{}; j < generalizedBurConfig.burOrder + 1; ++j) {
-                double tk{};
-                auto qk{ startingPoint };
+    for (int i{}; i < generalizedBurConfig.numOfSpines; ++i) {
+        auto&& qe{ randomConfigs->at(i) };
+        auto startingPoint{ qCenter };
+        double minDistance{ initMinDistance };
 
-                while (minDistance > generalizedBurConfig.minDistanceTol &&
-                    evaluatePhiFunction(minDistance, tk, qe, startingPoint) >= generalizedBurConfig.phiTol * minDistance) {
+        for (int j{}; j < generalizedBurConfig.burOrder + 1; ++j) {
+            double tk{};
+            auto qk{ startingPoint };
 
-                    auto&& radii{ robot.getEnclosingRadii(qk) };
+            while (minDistance > generalizedBurConfig.minDistanceTol &&
+                evaluatePhiFunction(minDistance, tk, qe, startingPoint) >= generalizedBurConfig.phiTol * minDistance) {
 
-                    double prevTk{ tk }, weightSum{};
-                    auto&& helperVec{ qe - qk };
-                    for (int k{}; k < radii.size(); ++k) {
-                        weightSum += radii.at(k) * std::abs(helperVec(k));
-                    }
-                    tk += (evaluatePhiFunction(minDistance, tk, qe, startingPoint) / weightSum) * (1 - tk);
-                    qk = startingPoint + tk * (qe - startingPoint);
+                auto&& radii{ robot.getEnclosingRadii(qk) };
 
-                    bool configInsideLimits{ true };
-                    for (int k{}; k < qk.size() && configInsideLimits; ++k) {
-                        configInsideLimits = (qk(k) >= qLowerBounds(k)) && (qk(k) <= qUpperBounds(k));
-                    }
+                double prevTk{ tk }, weightSum{};
+                auto&& helperVec{ qe - qk };
+                for (int k{}; k < radii.size(); ++k) {
+                    weightSum += radii.at(k) * std::abs(helperVec(k));
+                }
+                tk += (evaluatePhiFunction(minDistance, tk, qe, startingPoint) / weightSum) * (1 - tk);
+                qk = startingPoint + tk * (qe - startingPoint);
 
-                    if (!configInsideLimits) {
-                        tk = prevTk;
-                        qk = startingPoint + tk * (qe - startingPoint);
-                        break;
-                    }
+                bool configInsideLimits{ true };
+                for (int k{}; k < qk.size() && configInsideLimits; ++k) {
+                    configInsideLimits = (qk(k) >= qLowerBounds(k)) && (qk(k) <= qUpperBounds(k));
                 }
 
-                layers.at(i).at(j) = qk;
-                startingPoint = qk;
-                minDistance = getMinDistanceUnderestimation(qk);
+                if (!configInsideLimits) {
+                    tk = prevTk;
+                    qk = startingPoint + tk * (qe - startingPoint);
+                    break;
+                }
             }
+
+            layers.at(i).at(j) = qk;
+            startingPoint = qk;
+            minDistance = getMinDistanceUnderestimation(qk);
         }
     }
 

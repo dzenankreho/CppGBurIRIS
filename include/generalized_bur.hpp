@@ -10,6 +10,8 @@
 #include <tuple>
 
 
+#include <iostream>
+
 namespace GBurIRIS::GBur {
 
     struct GeneralizedBurConfig {
@@ -31,9 +33,12 @@ namespace GBurIRIS::GBur {
         );
         double getMinDistanceToCollision();
         std::tuple<std::vector<Eigen::VectorXd>, std::vector<std::vector<Eigen::VectorXd>>> calculateBur();
+        GeneralizedBurConfig getGeneralizedBurConfig() const;
+        std::vector<std::vector<Eigen::VectorXd>> getLayers() const;
+        void setRandomConfigs(const std::vector<Eigen::VectorXd>& randomConfigs);
 
     private:
-        const Eigen::VectorXd& qCenter;
+        const Eigen::VectorXd qCenter;
         const GeneralizedBurConfig& generalizedBurConfig;
         robots::Robot& robot;
         const std::function<Eigen::VectorXd ()>& randomConfigGenerator;
@@ -64,4 +69,16 @@ namespace GBurIRIS::GBur {
         return distance - robot.getMaxDisplacement(startingPoint, startingPoint + t * (qe - startingPoint));
     }
 
+
+    inline GeneralizedBurConfig GeneralizedBur::getGeneralizedBurConfig() const {
+        return generalizedBurConfig;
+    }
+
+    inline std::vector<std::vector<Eigen::VectorXd>> GeneralizedBur::getLayers() const {
+        return layers;
+    }
+
+    inline void GeneralizedBur::setRandomConfigs(const std::vector<Eigen::VectorXd>& randomConfigs) {
+        this->randomConfigs = randomConfigs;
+    }
 }
