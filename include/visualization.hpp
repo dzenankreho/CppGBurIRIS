@@ -7,6 +7,8 @@
 #include <drake/multibody/plant/multibody_plant.h>
 #include <drake/geometry/optimization/hpolyhedron.h>
 
+#include "generalized_bur.hpp"
+
 namespace GBurIRIS::visualization {
 
     class Figure {
@@ -22,13 +24,23 @@ namespace GBurIRIS::visualization {
         ) const;
 
         void visualize2dConvexSet(
-            const drake::multibody::MultibodyPlant<double>& plant,
+            const drake::planning::CollisionChecker& collisionChecker,
             const drake::geometry::optimization::ConvexSet& set,
             const int numOfSamples,
             const std::optional<std::tuple<double, double, double, double>>& plotColor = std::nullopt
         ) const;
 
+        void visualize2dGeneralizedBur(
+            const drake::planning::CollisionChecker& collisionChecker,
+            const GBur::GeneralizedBur& gBur,
+            const int numOfSamples,
+            std::optional<std::vector<std::tuple<double, double, double, double>>> plotColor = std::nullopt
+        ) const;
+
         static void showFigures();
     };
+
+
+    std::string rgbFloatToString(float r, float g, float b);
 
 }
