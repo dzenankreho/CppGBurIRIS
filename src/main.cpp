@@ -20,7 +20,7 @@
 #include "visualization.hpp"
 #include "planar_arm.hpp"
 #include "generalized_bur.hpp"
-
+#include "gbur_iris.hpp"
 
 
 
@@ -154,9 +154,36 @@ int main() {
 
     auto [randomConfigs_, layers] = gBur.calculateBur();
 
+
+    std::vector<Eigen::VectorXd> outerLayer;
+    for (auto&& spine : layers) {
+        outerLayer.push_back(*(spine.end() - 1));
+    }
+
+
+    auto ellipsoid{ GBurIRIS::MinVolumeEllipsoid(*collisionChecker, outerLayer) };
+
+    auto polytope{ GBurIRIS::InflatePolytope(*collisionChecker, ellipsoid) };
+
     int numOfSamples{ 250 };
     GBurIRIS::visualization::Figure figure;
     figure.visualize2dConfigurationSpace(*collisionChecker, numOfSamples);
+
+    figure.visualize2dConvexSet(
+        *collisionChecker,
+        polytope,
+        numOfSamples,
+        std::make_tuple(0, 1, 1, 1)
+    );
+
+    figure.visualize2dConvexSet(
+        *collisionChecker,
+        ellipsoid,
+        numOfSamples,
+        std::make_tuple(0.5, 0.5, 0.5, 1)
+    );
+
+
     figure.visualize2dGeneralizedBur(
         *collisionChecker,
         gBur,

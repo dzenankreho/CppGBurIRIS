@@ -16,6 +16,6 @@ include_directories(include)
 
 file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
-add_executable(CppGBurIRIS ${SOURCES})
+add_executable(CppGBurIRIS ${SOURCES} include/gbur_iris.hpp)
 
 target_link_libraries(CppGBurIRIS drake::drake Python3::Python Python3::Module Python3::NumPy)
