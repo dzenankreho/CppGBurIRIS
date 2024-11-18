@@ -126,6 +126,7 @@ int main() {
         std::bind(&DrakeRandomGenerator::randomConfig, &drakeRandomGenerator)
     );
 
+
     std::vector<Eigen::VectorXd> randomConfigs {
         Eigen::Vector2d(2.41516081, -12.3320883),
         Eigen::Vector2d(-2.68751996, 12.2756116),
@@ -153,13 +154,13 @@ int main() {
 
     auto [randomConfigs_, layers] = gBur.calculateBur();
 
-
+    int numOfSamples{ 250 };
     GBurIRIS::visualization::Figure figure;
-    figure.visualize2dConfigurationSpace(*collisionChecker, 250);
+    figure.visualize2dConfigurationSpace(*collisionChecker, numOfSamples);
     figure.visualize2dGeneralizedBur(
         *collisionChecker,
         gBur,
-        250,
+        numOfSamples,
         std::vector<std::tuple<double, double, double, double>>{
             {0.75, 0, 0, 1},
             {0, 0.75, 0, 1},

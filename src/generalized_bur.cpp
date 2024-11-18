@@ -39,7 +39,9 @@ void GBurIRIS::GBur::GeneralizedBur::approximateObstaclesWithPlanes() {
         auto&& bodyA{ plant.GetBodyFromFrameId(inspector.GetFrameId(distancePairs.at(i).id_A)) };
         auto&& bodyB{ plant.GetBodyFromFrameId(inspector.GetFrameId(distancePairs.at(i).id_B)) };
 
-        if (collisionChecker.IsPartOfRobot(*bodyA) && collisionChecker.IsPartOfRobot(*bodyB)) {
+        if ((collisionChecker.IsPartOfRobot(*bodyA) && collisionChecker.IsPartOfRobot(*bodyB)) ||
+            (!collisionChecker.IsPartOfRobot(*bodyA) && !collisionChecker.IsPartOfRobot(*bodyB))
+        ) {
             continue;
         }
 
@@ -53,16 +55,18 @@ void GBurIRIS::GBur::GeneralizedBur::approximateObstaclesWithPlanes() {
         Eigen::Vector3d pointOnB{ (bodyB->EvalPoseInWorld(plantContext).GetAsMatrix4() *
             (inspector.GetPoseInFrame(distancePairs.at(i).id_B).GetAsMatrix4() * pointOnBInBFrameHomogCord))(Eigen::seq(0, 2)) };
 
-        if (std::find_if(
+        if (auto it{ std::find_if(
                 linkObstacleDistancePairs->begin(),
                 linkObstacleDistancePairs->end(),
                 [bodyA, bodyB](auto&& linkObstacleDistancePair) -> bool {
                     return std::get<0>(linkObstacleDistancePair) == bodyA->index() &&
                         std::get<1>(linkObstacleDistancePair) == bodyB->index();
                 }
-            ) == linkObstacleDistancePairs->end()) {
+            ) }; it == linkObstacleDistancePairs->end()) {
 
             linkObstacleDistancePairs->emplace_back(bodyA->index(), bodyB->index(), pointOnA, pointOnB, distancePairs.at(i).distance);
+        } else if (std::get<4>(*it) > distancePairs.at(i).distance) {
+            *it = std::make_tuple(bodyA->index(), bodyB->index(), pointOnA, pointOnB, distancePairs.at(i).distance);
         }
     }
 
