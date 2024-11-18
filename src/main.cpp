@@ -121,7 +121,7 @@ int main() {
 
     GBurIRIS::GBur::GeneralizedBur gBur(
         Eigen::Vector2d(0, 0),
-        GBurIRIS::GBur::GeneralizedBurConfig{ 20, 0, 1e-5, 0.01 },
+        GBurIRIS::GBur::GeneralizedBurConfig{ 20, 2, 1e-5, 0.01 },
         planarArm,
         std::bind(&DrakeRandomGenerator::randomConfig, &drakeRandomGenerator)
     );
@@ -156,7 +156,16 @@ int main() {
 
     GBurIRIS::visualization::Figure figure;
     figure.visualize2dConfigurationSpace(*collisionChecker, 250);
-    figure.visualize2dGeneralizedBur(*collisionChecker, gBur, 250);
+    figure.visualize2dGeneralizedBur(
+        *collisionChecker,
+        gBur,
+        250,
+        std::vector<std::tuple<double, double, double, double>>{
+            {0.75, 0, 0, 1},
+            {0, 0.75, 0, 1},
+            {0, 0, 0.75, 1}
+        }
+    );
 
     figure.showFigures();
 

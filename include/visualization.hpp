@@ -34,7 +34,7 @@ namespace GBurIRIS::visualization {
             const drake::planning::CollisionChecker& collisionChecker,
             const GBur::GeneralizedBur& gBur,
             const int numOfSamples,
-            std::optional<std::vector<std::tuple<double, double, double, double>>> plotColor = std::nullopt
+            std::optional<std::vector<std::tuple<double, double, double, double>>> plotColors = std::nullopt
         ) const;
 
         static void showFigures();

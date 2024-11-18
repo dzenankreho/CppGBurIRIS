@@ -110,7 +110,7 @@ void GBurIRIS::visualization::Figure::visualize2dGeneralizedBur(
     const drake::planning::CollisionChecker& collisionChecker,
     const GBur::GeneralizedBur& gBur,
     const int numOfSamples,
-    std::optional<std::vector<std::tuple<double, double, double, double>>> plotColor
+    std::optional<std::vector<std::tuple<double, double, double, double>>> plotColors
 ) const {
 
     matplotlibcpp::figure(figureNumber);
@@ -122,8 +122,8 @@ void GBurIRIS::visualization::Figure::visualize2dGeneralizedBur(
     auto&& layers{ gBur.getLayers() };
 
 
-    if (!plotColor) {
-        plotColor = std::vector<std::tuple<double, double, double, double>>(
+    if (!plotColors) {
+        plotColors = std::vector<std::tuple<double, double, double, double>>(
             generalizedBurConfig.burOrder + 1,
             {1, 0, 0, 1}
         );
@@ -149,10 +149,10 @@ void GBurIRIS::visualization::Figure::visualize2dGeneralizedBur(
                     { prevBurLayerInPixels->at(i).at(0), burLayerInPixels.at(i).at(0) },
                     { prevBurLayerInPixels->at(i).at(1), burLayerInPixels.at(i).at(1) },
                     {
-                        {"color", rgbFloatToString(std::get<0>(*(plotColor->rbegin() + j)),
-                                                   std::get<1>(*(plotColor->rbegin() + j)),
-                                                   std::get<2>(*(plotColor->rbegin() + j)))},
-                        {"alpha", std::to_string(std::get<3>(*(plotColor->rbegin() + j)))}
+                        {"color", rgbFloatToString(std::get<0>(*(plotColors->begin() + j + 1)),
+                                                   std::get<1>(*(plotColors->begin() + j + 1)),
+                                                   std::get<2>(*(plotColors->begin() + j + 1)))},
+                        {"alpha", std::to_string(std::get<3>(*(plotColors->begin() + j + 1)))}
                     }
                 );
             }
@@ -163,10 +163,10 @@ void GBurIRIS::visualization::Figure::visualize2dGeneralizedBur(
                 { burLayerInPixels.at(i).at(0) },
                 { burLayerInPixels.at(i).at(1) },
                 {
-                    {"color", rgbFloatToString(std::get<0>(*(plotColor->rbegin() + j)),
-                                                std::get<1>(*(plotColor->rbegin() + j)),
-                                                std::get<2>(*(plotColor->rbegin() + j)))},
-                    {"alpha", std::to_string(std::get<3>(*(plotColor->rbegin() + j)))},
+                    {"color", rgbFloatToString(std::get<0>(*(plotColors->begin() + j)),
+                                                std::get<1>(*(plotColors->begin() + j)),
+                                                std::get<2>(*(plotColors->begin() + j)))},
+                    {"alpha", std::to_string(std::get<3>(*(plotColors->begin() + j)))},
                     {"marker", "."}
                 }
             );
@@ -186,10 +186,10 @@ void GBurIRIS::visualization::Figure::visualize2dGeneralizedBur(
         { burCenterInPixels.at(0) },
         { burCenterInPixels.at(1) },
         {
-            {"color", rgbFloatToString(std::get<0>(*(plotColor->rbegin())),
-                                       std::get<1>(*(plotColor->rbegin())),
-                                       std::get<2>(*(plotColor->rbegin())))},
-            {"alpha", std::to_string(std::get<3>(*(plotColor->rbegin())))},
+            {"color", rgbFloatToString(std::get<0>(*(plotColors->begin())),
+                                       std::get<1>(*(plotColors->begin())),
+                                       std::get<2>(*(plotColors->begin())))},
+            {"alpha", std::to_string(std::get<3>(*(plotColors->begin())))},
             {"marker", "."}
         }
     );
@@ -199,10 +199,10 @@ void GBurIRIS::visualization::Figure::visualize2dGeneralizedBur(
             { burCenterInPixels.at(0), prevBurLayerInPixels->at(i).at(0) },
             { burCenterInPixels.at(1), prevBurLayerInPixels->at(i).at(1) },
             {
-                {"color", rgbFloatToString(std::get<0>(*(plotColor->rbegin())),
-                                        std::get<1>(*(plotColor->rbegin())),
-                                        std::get<2>(*(plotColor->rbegin())))},
-                {"alpha", std::to_string(std::get<3>(*(plotColor->rbegin())))},
+                {"color", rgbFloatToString(std::get<0>(*(plotColors->begin())),
+                                        std::get<1>(*(plotColors->begin())),
+                                        std::get<2>(*(plotColors->begin())))},
+                {"alpha", std::to_string(std::get<3>(*(plotColors->begin())))},
             }
         );
     }
