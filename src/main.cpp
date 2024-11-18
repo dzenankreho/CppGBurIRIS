@@ -107,11 +107,42 @@ int main() {
 //
 //     std::cout << planarArm.getMaxDisplacement(config1, config2) << std::endl;
 
+    drake::RandomGenerator randomGenerator(1337);
+    auto domain = drake::geometry::optimization::HPolyhedron::MakeBox(
+        plant.GetPositionLowerLimits(),
+        plant.GetPositionUpperLimits()
+    );
+    DrakeRandomGenerator drakeRandomGenerator(domain, randomGenerator);
+
+    auto [regions, coverage, burs] = GBurIRIS::GBurIRIS(
+        planarArm,
+        GBurIRIS::GBurIRISConfig{ 7, 4, 1e-5, 0.1, 5000, 0.7, 1, 1, true },
+        std::bind(&DrakeRandomGenerator::randomConfig, &drakeRandomGenerator)
+    );
 
 
+    int numOfSamples{ 250 };
+    GBurIRIS::visualization::Figure figure;
+    figure.visualize2dConfigurationSpace(*collisionChecker, numOfSamples);
+
+    figure.visualize2dConvexSet(
+        *collisionChecker,
+        *regions.begin(),
+        numOfSamples,
+        std::make_tuple(0, 1, 1, 1)
+    );
+
+    figure.visualize2dGeneralizedBur(
+        *collisionChecker,
+        *burs.begin(),
+        numOfSamples,
+        std::vector<std::tuple<double, double, double, double>>(5, {0.75, 0, 0, 1})
+    );
+
+    figure.showFigures();
 
 
-
+/*
     drake::RandomGenerator randomGenerator(0);
     auto domain = drake::geometry::optimization::HPolyhedron::MakeBox(
         plant.GetPositionLowerLimits(),
@@ -179,7 +210,7 @@ int main() {
     figure.visualize2dConvexSet(
         *collisionChecker,
         ellipsoid,
-        numOfSamples,
+        numOfSamples,e
         std::make_tuple(0.5, 0.5, 0.5, 1)
     );
 
@@ -195,7 +226,7 @@ int main() {
         }
     );
 
-    figure.showFigures();
+    figure.showFigures();*/
 
 
 

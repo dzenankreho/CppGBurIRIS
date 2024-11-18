@@ -5,7 +5,8 @@
 #include <drake/geometry/optimization/hpolyhedron.h>
 #include <vector>
 #include <Eigen/Dense>
-
+#include "generalized_bur.hpp"
+#include <tuple>
 
 namespace GBurIRIS {
 
@@ -21,27 +22,35 @@ namespace GBurIRIS {
     );
 
 
-// def InflatePolytopes(
-//         collisionChecker: CollisionChecker,
-//         ellipsoids: list[Hyperellipsoid],
-//         numOfIrisIterations: int = 1
-//         ) -> list[HPolyhedron]:
-//
-//
-//     vccIrisOptions = IrisOptions()
-//     # VCC only requires 1 iteration
-//     vccIrisOptions.iteration_limit = numOfIrisIterations
-//
-//     plant = collisionChecker.plant()
-//     plantContext = collisionChecker.plant_context()
-//
-//     vccRegions = []
-//     for ellipsoid in ellipsoids:
-//         vccIrisOptions.starting_ellipse = ellipsoid
-//         plant.SetPositions(plantContext, ellipsoid.center())
-//         vccRegions.append(
-//             IrisInConfigurationSpace(plant, plantContext, vccIrisOptions)
-//         )
-//
-//     return vccRegions
+    struct GBurIRISConfig {
+        int numOfSpines{ 7 };
+        int burOrder{ 4 };
+        double minDistanceTol{ 1e-5 };
+        double phiTol{ 0.1 };
+        int numPointsCoverageCheck{ 5000 };
+        double coverage{ 0.7 };
+        int numOfIter{ 100 };
+        int numOfIterIRIS{ 1 };
+        bool ignoreDeltaExceptionFromIRISNP{ true };
+    };
+
+
+    double CheckCoverage(
+        const drake::planning::CollisionChecker& collisionChecker,
+        const std::vector<drake::geometry::optimization::HPolyhedron>& sets,
+        int numSamplesCoverageCheck,
+        const std::function<Eigen::VectorXd ()>& randomConfigGenerator
+    );
+
+
+    std::tuple<
+        std::vector<drake::geometry::optimization::HPolyhedron>,
+        double,
+        std::vector<GBur::GeneralizedBur>
+    > GBurIRIS(
+        robots::Robot& robot,
+        const GBurIRISConfig& gBurIRISConfig,
+        const std::function<Eigen::VectorXd ()>& randomConfigGenerator
+    );
+
 }

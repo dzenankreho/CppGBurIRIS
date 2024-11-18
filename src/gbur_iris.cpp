@@ -1,7 +1,19 @@
 #include "gbur_iris.hpp"
 
-// #include <drake/geometry/optimization/affine_ball.h>
 #include <drake/geometry/optimization/iris.h>
+#include <algorithm>
+#include <stdexcept>
+#include <string>
+
+
+const char* irisCenterMarginErrorStr{
+    "The current center of the IRIS region is within "
+    "options.configuration_space_margin of being infeasible.  Check your "
+    "sample point and/or any additional constraints you've passed in via "
+    "the options. The configuration space surrounding the sample point "
+    "must have an interior."
+};
+
 
 drake::geometry::optimization::Hyperellipsoid GBurIRIS::MinVolumeEllipsoid(
     const drake::planning::CollisionChecker& collisionChecker,
@@ -33,45 +45,7 @@ drake::geometry::optimization::Hyperellipsoid GBurIRIS::MinVolumeEllipsoid(
     }
 
     return drake::geometry::optimization::Hyperellipsoid(points.at(closestPoint), ellipsoid.A());
-
-//     auto&& affineBall{
-//         drake::geometry::optimization::AffineBall::MinimumVolumeCircumscribedEllipsoid(pointsMatrix)
-//     };
-//
-//
-//     auto svd{ Eigen::JacobiSVD<Eigen::MatrixXd>(affineBall.B(), Eigen::ComputeFullU | Eigen::ComputeFullV) };
-//     auto S{ svd.singularValues() };
-//
-//     for (int i{}; i < S.size(); ++i) {
-//         if (S(i) < 1e-4) {
-//             S(i) = 1e-4;
-//         }
-//     }
-//
-//     auto newBall{
-//         svd.matrixU() * (S.asDiagonal() * svd.matrixV().transpose())
-//     };
-//
-// U, S, Vt = np.linalg.svd(affineBall.B())
-//
-// # Force the ellipsoid to have volume, i.e., at length to small axes
-// for i in range(S.shape[0]):
-//     if S[i] < 1e-4:
-//         S[i] = 1e-4
-// newB = U @ np.diag(S) @ Vt
-//
-// ellipsoidCenter = affineBall.center()
-//
-// # Move the ellipsoid center if in collision
-// if not collisionChecker.CheckConfigCollisionFree(ellipsoidCenter):
-//     ellipsoidCenter = clique[np.argmin([np.linalg.norm(ellipsoidCenter - node) for node in clique])]
-//
-// ellipsoids.append(Hyperellipsoid(AffineBall(newB, ellipsoidCenter)))
-//
-//
-//     return drake::geometry::optimization::Hyperellipsoid(drake::geometry::optimization::AffineBall(newBall, affineBall.center()));
 }
-
 
 
 drake::geometry::optimization::HPolyhedron GBurIRIS::InflatePolytope(
@@ -87,5 +61,119 @@ drake::geometry::optimization::HPolyhedron GBurIRIS::InflatePolytope(
     auto&& plantContext{ collisionChecker.UpdatePositions(ellipsoid.center()) };
 
     return IrisInConfigurationSpace(collisionChecker.plant(), plantContext, irisOptions);
+}
+
+
+double GBurIRIS::CheckCoverage(
+    const drake::planning::CollisionChecker& collisionChecker,
+    const std::vector<drake::geometry::optimization::HPolyhedron>& sets,
+    int numSamplesCoverageCheck,
+    const std::function<Eigen::VectorXd ()>& randomConfigGenerator
+) {
+
+    int numSamplesGenerated{}, numCoveredPoints{};
+
+    while (numSamplesCoverageCheck > numSamplesGenerated) {
+        if (auto&& q{ randomConfigGenerator() }; collisionChecker.CheckConfigCollisionFree(q)) {
+            ++numSamplesGenerated;
+
+            numCoveredPoints += std::any_of(
+                sets.begin(),
+                sets.end(),
+                [q](auto&& set) { return set.PointInSet(q); }
+            );
+        }
+    }
+
+    return double(numCoveredPoints) / double(numSamplesCoverageCheck);
+}
+
+std::tuple<
+    std::vector<drake::geometry::optimization::HPolyhedron>,
+    double,
+    std::vector<GBurIRIS::GBur::GeneralizedBur>
+> GBurIRIS::GBurIRIS(
+    robots::Robot& robot,
+    const GBurIRISConfig& gBurIRISConfig,
+    const std::function<Eigen::VectorXd ()>& randomConfigGenerator
+) {
+
+    std::vector<drake::geometry::optimization::HPolyhedron> regions;
+    std::vector<GBur::GeneralizedBur> burs;
+    double coverage;
+
+    auto&& collisionChecker{ robot.getCollisionChecker() };
+
+    for (int i{}; i < gBurIRISConfig.numOfIter; ++i) {
+        coverage = CheckCoverage(
+            collisionChecker,
+            regions,
+            gBurIRISConfig.numPointsCoverageCheck,
+            randomConfigGenerator
+        );
+
+        if (coverage >= gBurIRISConfig.coverage) {
+            break;
+        }
+
+
+        Eigen::VectorXd burCenter;
+
+        for (
+            burCenter = randomConfigGenerator();
+            !collisionChecker.CheckConfigCollisionFree(burCenter) ||
+                std::any_of(
+                    regions.begin(),
+                    regions.end(),
+                    [burCenter](auto&& region) { return region.PointInSet(burCenter); }
+                );
+            burCenter = randomConfigGenerator()
+        );
+
+
+        GBurIRIS::GBur::GeneralizedBur bur(
+            burCenter,
+            GBurIRIS::GBur::GeneralizedBurConfig{
+                gBurIRISConfig.numOfSpines,
+                gBurIRISConfig.burOrder,
+                gBurIRISConfig.minDistanceTol,
+                gBurIRISConfig.phiTol
+            },
+            robot,
+            randomConfigGenerator
+        );
+
+        if (bur.getMinDistanceToCollision() < gBurIRISConfig.minDistanceTol) {
+            --i;
+            continue;
+        }
+
+
+        auto [burRandomConfigs, layers] = bur.calculateBur();
+
+        burs.push_back(bur);
+
+        std::vector<Eigen::VectorXd> outerLayer;
+        for (auto&& spine : layers) {
+            outerLayer.push_back(*(spine.end() - 1));
+        }
+        auto&& ellipsoid{ GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer) };
+
+        try {
+            regions.push_back(GBurIRIS::InflatePolytope(collisionChecker, ellipsoid));
+        } catch(const std::logic_error& exception) {
+            if (!gBurIRISConfig.ignoreDeltaExceptionFromIRISNP ||
+                    std::string(exception.what()) != irisCenterMarginErrorStr
+            ) {
+                throw;
+            }
+
+            burs.pop_back();
+            --i;
+            continue;
+        }
+    }
+
+    return std::make_tuple(regions, coverage, burs);
 }
 
