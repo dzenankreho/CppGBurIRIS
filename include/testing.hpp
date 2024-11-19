@@ -18,6 +18,10 @@ namespace GBurIRIS::testing {
             std::vector<std::size_t>,
             std::vector<double>
         > run(int numOfRuns) const = 0;
+        template <typename T>
+        static double calculateMean(const std::vector<T>& data);
+        template <typename T>
+        static double calculateStandardDeviation(const std::vector<T>& data);
 
     protected:
         robots::Robot& robot;
@@ -68,4 +72,19 @@ namespace GBurIRIS::testing {
 
     };
 
+
+    template <typename T>
+    double Test::calculateMean(const std::vector<T>& data) {
+        return double(std::accumulate(data.begin(), data.end(), 0)) / data.size();
+    }
+
+    template <typename T>
+    double Test::calculateStandardDeviation(const std::vector<T>& data) {
+        double mean{ calculateMean(data) };
+
+        std::vector<double> diff(data.size());
+        std::transform(data.begin(), data.end(), diff.begin(), [mean](const T& t) { return double(t) - mean; });
+
+        return std::sqrt(std::inner_product(diff.begin(), diff.end(), diff.begin(), 0) / data.size());
+    }
 };

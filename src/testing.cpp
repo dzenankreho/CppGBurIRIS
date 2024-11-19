@@ -1,7 +1,9 @@
 #include "testing.hpp"
 #include <chrono>
 #include <drake/common/random.h>
-
+#include <numeric>
+#include <algorithm>
+#include <cmath>
 
 GBurIRIS::testing::Test::Test(robots::Robot& robot, unsigned int randomSeed)
     : robot{ robot }, randomSeed{ randomSeed } {
