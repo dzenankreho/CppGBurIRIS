@@ -1,6 +1,7 @@
 #include "gbur_iris.hpp"
 
 #include <drake/geometry/optimization/iris.h>
+#include <drake/geometry/optimization/affine_ball.h>
 #include <algorithm>
 #include <stdexcept>
 #include <string>
@@ -33,7 +34,6 @@ drake::geometry::optimization::Hyperellipsoid GBurIRIS::MinVolumeEllipsoid(
         return ellipsoid;
     }
 
-
     int closestPoint{};
     double minDistance{ (points.at(closestPoint) - ellipsoid.center()).norm() };
 
@@ -44,7 +44,7 @@ drake::geometry::optimization::Hyperellipsoid GBurIRIS::MinVolumeEllipsoid(
         }
     }
 
-    return drake::geometry::optimization::Hyperellipsoid(points.at(closestPoint), ellipsoid.A());
+    return drake::geometry::optimization::Hyperellipsoid(ellipsoid.A(), points.at(closestPoint));
 }
 
 
@@ -111,6 +111,7 @@ std::tuple<
             gBurIRISConfig.numPointsCoverageCheck,
             randomConfigGenerator
         );
+
 
         if (coverage >= gBurIRISConfig.coverage) {
             break;
