@@ -3,7 +3,8 @@
 #include <tuple>
 #include <vector>
 #include <functional>
-
+#include <chrono>
+#include <filesystem>
 
 
 #include <Eigen/Dense>
@@ -21,7 +22,7 @@
 #include "planar_arm.hpp"
 #include "generalized_bur.hpp"
 #include "gbur_iris.hpp"
-
+#include "testing.hpp"
 
 
 class DrakeRandomGenerator {
@@ -51,14 +52,45 @@ private:
 };
 
 
+// #include<random>
+// #include<ctime>
+//
+// static std::default_random_engine e(std::time(0));
+// static std::normal_distribution<double> gaussian(0,1);
+//
+// Eigen::MatrixXd randomOrthogonalMatrix(const unsigned long n){
+//   Eigen::MatrixXd X = Eigen::MatrixXd::Zero(n,n).unaryExpr([](double dummy){return gaussian(e);});
+//   Eigen::MatrixXd XtX = X.transpose() * X;
+//   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(XtX);
+//   Eigen::MatrixXd S = es.operatorInverseSqrt();
+//   return X * S;
+// }
+//
+// int main() {
+//     constexpr int n{ 4 };
+//
+//     auto mat{ randomOrthogonalMatrix(n) };
+//     std::cout << mat << std::endl << std::endl << mat.determinant() << std::endl << std::endl;
+//
+//     if (mat.determinant() < 0) {
+//         mat.col(0) *= -1;
+//     }
+//
+//     std::cout << mat << std::endl << std::endl << mat.determinant() << std::endl << std::endl;
+//
+//     return 0;
+// }
+
 
 int main() {
     drake::planning::RobotDiagramBuilder<double> robotDiagramBuilder;
     drake::multibody::MultibodyPlant<double>& plant{ robotDiagramBuilder.plant() };
 
+    std::string projectPath{ std::filesystem::current_path().parent_path().string() };
+
     drake::multibody::Parser parser(&plant);
-    parser.package_map().Add("assets", "/home/dzenan/Desktop/TestDrake/assets");
-    parser.AddModels("/home/dzenan/Desktop/TestDrake/scenes/2dofScene0.dmd.yaml");
+    parser.package_map().Add("assets", projectPath + "/assets");
+    parser.AddModels(projectPath + "/scenes/2dofScene3.dmd.yaml");
     plant.Finalize();
 
     // drake::visualization::AddDefaultVisualization(&robotDiagramBuilder.builder());
@@ -77,12 +109,6 @@ int main() {
     std::unique_ptr<drake::planning::CollisionChecker> collisionChecker{
         std::make_unique<drake::planning::SceneGraphCollisionChecker>(std::move(collisionCheckerParams))
     };
-
-// jointChildAndEndEffectorLinks = [
-//     plant.GetBodyByName("2dofPlanarLink1", plant.GetModelInstanceByName("2dofPlanarArm")),
-//     plant.GetBodyByName("2dofPlanarLink2", plant.GetModelInstanceByName("2dofPlanarArm")),
-//     plant.GetBodyByName("2dofPlanarEndEffector", plant.GetModelInstanceByName("2dofPlanarArm"))
-// ]
 
     std::vector<std::reference_wrapper<const drake::multibody::RigidBody<double>>> jointChildAndEndEffectorLinks {
         plant.GetBodyByName("2dofPlanarLink1", plant.GetModelInstanceByName("2dofPlanarArm")),
@@ -107,39 +133,33 @@ int main() {
 //
 //     std::cout << planarArm.getMaxDisplacement(config1, config2) << std::endl;
 
-    drake::RandomGenerator randomGenerator(1337);
-    auto domain = drake::geometry::optimization::HPolyhedron::MakeBox(
-        plant.GetPositionLowerLimits(),
-        plant.GetPositionUpperLimits()
-    );
-    DrakeRandomGenerator drakeRandomGenerator(domain, randomGenerator);
 
-    auto [regions, coverage, burs] = GBurIRIS::GBurIRIS(
-        planarArm,
-        GBurIRIS::GBurIRISConfig{ 7, 4, 1e-5, 0.1, 5000, 0.7, 1, 1, true },
-        std::bind(&DrakeRandomGenerator::randomConfig, &drakeRandomGenerator)
-    );
+    int numOfRuns{ 10 };
+
+    GBurIRIS::GBurIRISConfig gBurIRISConfig;
+    gBurIRISConfig.coverage = 0.9;
+
+    GBurIRIS::testing::TestGBurIRIS testGBurIRIS(planarArm, gBurIRISConfig);
+    auto [execTimeGBurIRIS, numOfRegionsGBurIRIS, coverageGBurIRIS] = testGBurIRIS.run(numOfRuns);
+
+    drake::planning::IrisFromCliqueCoverOptions irisFromCliqueCoverOptions;
+    irisFromCliqueCoverOptions.coverage_termination_threshold = 0.9;
+    irisFromCliqueCoverOptions.num_points_per_visibility_round = 500;
+    irisFromCliqueCoverOptions.num_points_per_coverage_check = 5000;
+    irisFromCliqueCoverOptions.minimum_clique_size = 10;
 
 
-    int numOfSamples{ 250 };
-    GBurIRIS::visualization::Figure figure;
-    figure.visualize2dConfigurationSpace(*collisionChecker, numOfSamples);
+    GBurIRIS::testing::TestVCC testVCC(planarArm, irisFromCliqueCoverOptions);
+    auto [execTimeVCC, numOfRegionsVCC, coverageVCC] = testVCC.run(numOfRuns);
 
-    figure.visualize2dConvexSet(
-        *collisionChecker,
-        *regions.begin(),
-        numOfSamples,
-        std::make_tuple(0, 1, 1, 1)
-    );
 
-    figure.visualize2dGeneralizedBur(
-        *collisionChecker,
-        *burs.begin(),
-        numOfSamples,
-        std::vector<std::tuple<double, double, double, double>>(5, {0.75, 0, 0, 1})
-    );
+    std::cout << testGBurIRIS.calculateMean(execTimeGBurIRIS) << " "
+              << testGBurIRIS.calculateMean(numOfRegionsGBurIRIS) << " "
+              << testGBurIRIS.calculateMean(coverageGBurIRIS) << std::endl
+              << testVCC.calculateMean(execTimeVCC) << " "
+              << testVCC.calculateMean(numOfRegionsVCC) << " "
+              << testVCC.calculateMean(coverageVCC) << std::endl;
 
-    figure.showFigures();
 
 
 /*

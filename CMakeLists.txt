@@ -15,7 +15,8 @@ find_package(Python3 COMPONENTS NumPy REQUIRED)
 include_directories(include)
 
 file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
+file(GLOB INCLUDES "${PROJECT_SOURCE_DIR}/include/*.hpp")
 
-add_executable(CppGBurIRIS ${SOURCES} include/gbur_iris.hpp)
+add_executable(CppGBurIRIS ${SOURCES} ${INCLUDES})
 
 target_link_libraries(CppGBurIRIS drake::drake Python3::Python Python3::Module Python3::NumPy)
