@@ -210,7 +210,7 @@ std::tuple<std::vector<Eigen::VectorXd>, std::vector<std::vector<Eigen::VectorXd
 
             for (int i{}; i < numOfDof; ++i) {
                 Eigen::VectorXd baseVector{ Eigen::VectorXd::Zero(numOfDof) };
-                baseVector(i) = maxDistanceConfigSpace;
+                baseVector(i) = 2 * maxDistanceConfigSpace;
                 randomConfigs->push_back((*rotationMatrix * baseVector) + qCenter);
                 baseVector *= -1;
                 randomConfigs->push_back((*rotationMatrix * baseVector) + qCenter);
