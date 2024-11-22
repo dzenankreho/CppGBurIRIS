@@ -29,7 +29,19 @@ namespace GBurIRIS::GBur {
             const Eigen::VectorXd& qCenter,
             const GeneralizedBurConfig& generalizedBurConfig,
             robots::Robot& robot,
+            const std::vector<Eigen::VectorXd>& randomConfigs
+        );
+        GeneralizedBur(
+            const Eigen::VectorXd& qCenter,
+            const GeneralizedBurConfig& generalizedBurConfig,
+            robots::Robot& robot,
             const std::function<Eigen::VectorXd ()>& randomConfigGenerator
+        );
+        GeneralizedBur(
+            const Eigen::VectorXd& qCenter,
+            const GeneralizedBurConfig& generalizedBurConfig,
+            robots::Robot& robot,
+            const Eigen::MatrixXd& rotationMatrix
         );
         double getMinDistanceToCollision();
         std::tuple<std::vector<Eigen::VectorXd>, std::vector<std::vector<Eigen::VectorXd>>> calculateBur();
@@ -42,7 +54,8 @@ namespace GBurIRIS::GBur {
         const Eigen::VectorXd qCenter;
         const GeneralizedBurConfig generalizedBurConfig;
         robots::Robot& robot;
-        const std::function<Eigen::VectorXd ()> randomConfigGenerator;
+        std::optional<std::function<Eigen::VectorXd ()>> randomConfigGenerator{ std::nullopt };
+        std::optional<Eigen::MatrixXd> rotationMatrix{ std::nullopt };
         std::optional<std::vector<Eigen::VectorXd>> randomConfigs{ std::nullopt };
         std::optional<double> minDistance{ std::nullopt };
         std::optional<std::vector<

@@ -19,6 +19,34 @@ GBurIRIS::GBur::GeneralizedBur::GeneralizedBur(
 }
 
 
+GBurIRIS::GBur::GeneralizedBur::GeneralizedBur(
+    const Eigen::VectorXd& qCenter,
+    const GeneralizedBurConfig& generalizedBurConfig,
+    robots::Robot& robot,
+    const Eigen::MatrixXd& rotationMatrix
+) : qCenter{ qCenter },
+    generalizedBurConfig{ generalizedBurConfig },
+    robot{ robot },
+    rotationMatrix{ rotationMatrix } {
+
+    layers.resize(generalizedBurConfig.numOfSpines, std::vector<Eigen::VectorXd>(generalizedBurConfig.burOrder + 1));
+}
+
+
+GBurIRIS::GBur::GeneralizedBur::GeneralizedBur(
+    const Eigen::VectorXd& qCenter,
+    const GeneralizedBurConfig& generalizedBurConfig,
+    robots::Robot& robot,
+    const std::vector<Eigen::VectorXd>& randomConfigs
+) : qCenter{ qCenter },
+    generalizedBurConfig{ generalizedBurConfig },
+    robot{ robot },
+    randomConfigs{ randomConfigs } {
+
+    layers.resize(generalizedBurConfig.numOfSpines, std::vector<Eigen::VectorXd>(generalizedBurConfig.burOrder + 1));
+}
+
+
 void GBurIRIS::GBur::GeneralizedBur::approximateObstaclesWithPlanes() {
     if (linkObstacleDistancePairs && linkObstaclePlanes) {
         return;
@@ -176,12 +204,26 @@ std::tuple<std::vector<Eigen::VectorXd>, std::vector<std::vector<Eigen::VectorXd
             maxDistanceConfigSpace = std::max(maxDistanceConfigSpace, qSpaceWidth(i));
         }
 
-        while (generalizedBurConfig.numOfSpines > randomConfigs->size()) {
-            auto&& q{ randomConfigGenerator() };
-            auto&& unitVec{ (q - qCenter) / (q - qCenter).norm() };
-            randomConfigs->push_back(qCenter + unitVec * 2 * maxDistanceConfigSpace);
+
+        if (rotationMatrix) {
+            long numOfDof{ qUpperBounds.size() };
+
+            for (int i{}; i < numOfDof; ++i) {
+                Eigen::VectorXd baseVector{ Eigen::VectorXd::Zero(numOfDof) };
+                baseVector(i) = maxDistanceConfigSpace;
+                randomConfigs->push_back((*rotationMatrix * baseVector) + qCenter);
+                baseVector *= -1;
+                randomConfigs->push_back((*rotationMatrix * baseVector) + qCenter);
+            }
         }
 
+        if (randomConfigGenerator) {
+            while (generalizedBurConfig.numOfSpines > randomConfigs->size()) {
+                auto&& q{ (*randomConfigGenerator)() };
+                auto&& unitVec{ (q - qCenter) / (q - qCenter).norm() };
+                randomConfigs->push_back(qCenter + unitVec * 2 * maxDistanceConfigSpace);
+            }
+        }
     }
 
     double initMinDistance{ getMinDistanceToCollision() };
