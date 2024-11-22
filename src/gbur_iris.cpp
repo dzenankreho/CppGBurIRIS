@@ -16,6 +16,13 @@ const char* irisCenterMarginErrorStr{
     "must have an interior."
 };
 
+const char* minVolEllipsoidRankErrorStr{
+    "The numerical rank of the points appears to be less than the "
+    "ambient dimension. The smallest singular value is {}, which is "
+    "below rank_tol = {}. Decrease rank_tol or consider using "
+    "AffineBall::MinimumVolumeCircumscribedEllipsoid instead."
+};
+
 
 drake::geometry::optimization::Hyperellipsoid GBurIRIS::MinVolumeEllipsoid(
     const drake::planning::CollisionChecker& collisionChecker,
@@ -159,11 +166,23 @@ std::tuple<
         for (auto&& spine : layers) {
             outerLayer.push_back(*(spine.end() - 1));
         }
-        auto&& ellipsoid{ GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer) };
+
+        drake::geometry::optimization::Hyperellipsoid ellipsoid;
+        try {
+            ellipsoid = GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer);
+        } catch (const std::runtime_error& exception) {
+            if (std::string(exception.what()) != minVolEllipsoidRankErrorStr) {
+                throw;
+            }
+
+            burs.pop_back();
+            --i;
+            continue;
+        }
 
         try {
             regions.push_back(GBurIRIS::InflatePolytope(collisionChecker, ellipsoid));
-        } catch(const std::logic_error& exception) {
+        } catch (const std::logic_error& exception) {
             if (!gBurIRISConfig.ignoreDeltaExceptionFromIRISNP ||
                     std::string(exception.what()) != irisCenterMarginErrorStr
             ) {
@@ -251,7 +270,19 @@ std::tuple<
         for (auto&& spine : layers) {
             outerLayer.push_back(*(spine.end() - 1));
         }
-        auto&& ellipsoid{ GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer) };
+
+        drake::geometry::optimization::Hyperellipsoid ellipsoid;
+        try {
+            ellipsoid = GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer);
+        } catch (const std::runtime_error& exception) {
+            if (std::string(exception.what()) != minVolEllipsoidRankErrorStr) {
+                throw;
+            }
+
+            burs.pop_back();
+            --i;
+            continue;
+        }
 
         try {
             regions.push_back(GBurIRIS::InflatePolytope(collisionChecker, ellipsoid));
