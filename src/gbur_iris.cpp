@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <string>
+#include <random>
 
 
 const char* irisCenterMarginErrorStr{
@@ -178,3 +179,94 @@ std::tuple<
     return std::make_tuple(regions, coverage, burs);
 }
 
+
+std::tuple<
+    std::vector<drake::geometry::optimization::HPolyhedron>,
+    double,
+    std::vector<GBurIRIS::GBur::GeneralizedBur>
+> GBurIRIS::GBurIRIS(
+    robots::Robot& robot,
+    GBurIRISConfig gBurIRISConfig,
+    const std::function<Eigen::VectorXd ()>& randomConfigGenerator,
+    const std::function<Eigen::MatrixXd ()>& generateRandomRotationMatrix
+) {
+
+    std::vector<drake::geometry::optimization::HPolyhedron> regions;
+    std::vector<GBur::GeneralizedBur> burs;
+    double coverage;
+
+    auto&& collisionChecker{ robot.getCollisionChecker() };
+
+    for (int i{}; i < gBurIRISConfig.numOfIter; ++i) {
+        coverage = CheckCoverage(
+            collisionChecker,
+            regions,
+            gBurIRISConfig.numPointsCoverageCheck,
+            randomConfigGenerator
+        );
+
+
+        if (coverage >= gBurIRISConfig.coverage) {
+            break;
+        }
+
+
+        Eigen::VectorXd burCenter;
+
+        for (
+            burCenter = randomConfigGenerator();
+            !collisionChecker.CheckConfigCollisionFree(burCenter) ||
+                std::any_of(
+                    regions.begin(),
+                    regions.end(),
+                    [burCenter](auto&& region) { return region.PointInSet(burCenter); }
+                );
+            burCenter = randomConfigGenerator()
+        );
+
+
+        GBurIRIS::GBur::GeneralizedBur bur(
+            burCenter,
+            GBurIRIS::GBur::GeneralizedBurConfig{
+                gBurIRISConfig.numOfSpines,
+                gBurIRISConfig.burOrder,
+                gBurIRISConfig.minDistanceTol,
+                gBurIRISConfig.phiTol
+            },
+            robot,
+            generateRandomRotationMatrix()
+        );
+
+        if (bur.getMinDistanceToCollision() < gBurIRISConfig.minDistanceTol) {
+            --i;
+            continue;
+        }
+
+
+        auto [burRandomConfigs, layers] = bur.calculateBur();
+
+        burs.push_back(bur);
+
+        std::vector<Eigen::VectorXd> outerLayer;
+        for (auto&& spine : layers) {
+            outerLayer.push_back(*(spine.end() - 1));
+        }
+        auto&& ellipsoid{ GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer) };
+
+        try {
+            regions.push_back(GBurIRIS::InflatePolytope(collisionChecker, ellipsoid));
+        } catch(const std::logic_error& exception) {
+            if (!gBurIRISConfig.ignoreDeltaExceptionFromIRISNP ||
+                    std::string(exception.what()) != irisCenterMarginErrorStr
+            ) {
+                throw;
+            }
+
+            burs.pop_back();
+            --i;
+            continue;
+        }
+    }
+
+    return std::make_tuple(regions, coverage, burs);
+}

@@ -52,31 +52,40 @@ private:
 };
 
 
-// #include<random>
-// #include<ctime>
-//
-// static std::default_random_engine e(std::time(0));
-// static std::normal_distribution<double> gaussian(0,1);
-//
-// Eigen::MatrixXd randomOrthogonalMatrix(const unsigned long n){
-//   Eigen::MatrixXd X = Eigen::MatrixXd::Zero(n,n).unaryExpr([](double dummy){return gaussian(e);});
-//   Eigen::MatrixXd XtX = X.transpose() * X;
-//   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(XtX);
-//   Eigen::MatrixXd S = es.operatorInverseSqrt();
-//   return X * S;
-// }
-//
+
+
 // int main() {
-//     constexpr int n{ 4 };
+//     constexpr int n{ 3 };
 //
-//     auto mat{ randomOrthogonalMatrix(n) };
-//     std::cout << mat << std::endl << std::endl << mat.determinant() << std::endl << std::endl;
+//     auto mat{ GBurIRIS::generateRandomRotationMatrix(n) };
 //
-//     if (mat.determinant() < 0) {
-//         mat.col(0) *= -1;
-//     }
 //
-//     std::cout << mat << std::endl << std::endl << mat.determinant() << std::endl << std::endl;
+//     Eigen::Vector3d p1{mat * Eigen::Vector3d(1, 0, 0)},
+//         p2{mat * Eigen::Vector3d(0, 1, 0)},
+//         p3{mat * Eigen::Vector3d(0, 0, 1)};
+//
+//
+//     std::cout << p1.transpose() << std::endl
+//               << p2.transpose() << std::endl
+//               << p3.transpose() << std::endl
+//               << p1.dot(p2) << std::endl
+//               << p1.dot(p3) << std::endl
+//               << p2.dot(p3) << std::endl;
+//
+//
+// //     matplotlibcpp::plot({0, 0}, {0, 1}, {{"color", "red"}});
+// //     matplotlibcpp::plot({0}, {1}, {{"color", "red"}, {"marker", "."}});
+// //     matplotlibcpp::plot({0, 1}, {0, 0}, {{"color", "red"}});
+// //     matplotlibcpp::plot({1}, {0}, {{"color", "red"}, {"marker", "."}});
+// //
+// //     matplotlibcpp::plot({0, p1(0)}, {0, p1(1)}, {{"color", "blue"}});
+// //     matplotlibcpp::plot({p1(0)}, {p1(1)}, {{"color", "blue"}, {"marker", "."}});
+// //     matplotlibcpp::plot({0, p2(0)}, {0, p2(1)}, {{"color", "blue"}});
+// //     matplotlibcpp::plot({p2(0)}, {p2(1)}, {{"color", "blue"}, {"marker", "."}});
+// //
+// //     matplotlibcpp::show();
+//
+//
 //
 //     return 0;
 // }
@@ -134,13 +143,52 @@ int main() {
 //     std::cout << planarArm.getMaxDisplacement(config1, config2) << std::endl;
 
 
-    int numOfRuns{ 10 };
+//     drake::RandomGenerator randomGenerator(0);
+//     auto domain = drake::geometry::optimization::HPolyhedron::MakeBox(
+//         plant.GetPositionLowerLimits(),
+//         plant.GetPositionUpperLimits()
+//     );
+//     DrakeRandomGenerator drakeRandomGenerator(domain, randomGenerator);
+//
+//     GBurIRIS::GBurIRISConfig gBurIRISConfig;
+//     gBurIRISConfig.numOfIter = 1;
+//     gBurIRISConfig.coverage = 0.9;
+//
+//     auto [regionsGBurIRIS, coverageGBurIRIS, burs] = GBurIRIS::GBurIRIS2(
+//         planarArm,
+//         gBurIRISConfig,
+//         std::bind(&DrakeRandomGenerator::randomConfig, &drakeRandomGenerator)
+//     );
+//
+//
+//     int numOfSamples{ 250 };
+//     GBurIRIS::visualization::Figure figure;
+//     figure.visualize2dConfigurationSpace(*collisionChecker, numOfSamples);
+//
+//     figure.visualize2dGeneralizedBur(
+//         *collisionChecker,
+//         burs.at(0),
+//         numOfSamples
+//     );
+//
+//     figure.showFigures();
+
+
+    int numOfRuns{ 5 };
 
     GBurIRIS::GBurIRISConfig gBurIRISConfig;
     gBurIRISConfig.coverage = 0.9;
 
     GBurIRIS::testing::TestGBurIRIS testGBurIRIS(planarArm, gBurIRISConfig);
     auto [execTimeGBurIRIS, numOfRegionsGBurIRIS, coverageGBurIRIS] = testGBurIRIS.run(numOfRuns);
+
+    gBurIRISConfig.numOfSpines = 4;
+    GBurIRIS::testing::TestGBurIRIS testGBurIRIS2(
+        planarArm,
+        gBurIRISConfig,
+        GBurIRIS::testing::TestGBurIRIS::GBurDistantConfigOption::rotationMatrix
+    );
+    auto [execTimeGBurIRIS2, numOfRegionsGBurIRIS2, coverageGBurIRIS2] = testGBurIRIS2.run(numOfRuns);
 
     drake::planning::IrisFromCliqueCoverOptions irisFromCliqueCoverOptions;
     irisFromCliqueCoverOptions.coverage_termination_threshold = 0.9;
@@ -156,6 +204,9 @@ int main() {
     std::cout << testGBurIRIS.calculateMean(execTimeGBurIRIS) << " "
               << testGBurIRIS.calculateMean(numOfRegionsGBurIRIS) << " "
               << testGBurIRIS.calculateMean(coverageGBurIRIS) << std::endl
+              << testGBurIRIS.calculateMean(execTimeGBurIRIS2) << " "
+              << testGBurIRIS.calculateMean(numOfRegionsGBurIRIS2) << " "
+              << testGBurIRIS.calculateMean(coverageGBurIRIS2) << std::endl
               << testVCC.calculateMean(execTimeVCC) << " "
               << testVCC.calculateMean(numOfRegionsVCC) << " "
               << testVCC.calculateMean(coverageVCC) << std::endl;

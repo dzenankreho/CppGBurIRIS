@@ -53,4 +53,15 @@ namespace GBurIRIS {
         const std::function<Eigen::VectorXd ()>& randomConfigGenerator
     );
 
+
+    std::tuple<
+        std::vector<drake::geometry::optimization::HPolyhedron>,
+        double,
+        std::vector<GBur::GeneralizedBur>
+    > GBurIRIS(
+        robots::Robot& robot,
+        GBurIRISConfig gBurIRISConfig,
+        const std::function<Eigen::VectorXd ()>& randomConfigGenerator,
+        const std::function<Eigen::MatrixXd ()>& generateRandomRotationMatrix
+    );
 }

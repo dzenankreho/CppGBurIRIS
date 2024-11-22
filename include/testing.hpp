@@ -33,9 +33,12 @@ namespace GBurIRIS::testing {
     class TestGBurIRIS final : public Test {
 
     public:
+        enum class GBurDistantConfigOption{ individualConfigs, rotationMatrix };
+
         TestGBurIRIS(
             robots::Robot& robot,
             const GBurIRISConfig& gBurIRISConfig,
+            const GBurDistantConfigOption& gBurDistantConfigOption = GBurDistantConfigOption::individualConfigs,
             unsigned int randomSeed = std::time(nullptr)
         );
 
@@ -47,6 +50,7 @@ namespace GBurIRIS::testing {
 
     private:
         const GBurIRISConfig gBurIRISConfig;
+        const GBurDistantConfigOption gBurDistantConfigOption;
 
     };
 
