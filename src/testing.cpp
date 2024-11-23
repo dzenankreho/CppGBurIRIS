@@ -88,8 +88,6 @@ Eigen::MatrixXd generateRandomRotationMatrix(const int matrixSize) {
 }
 
 
-
-
 std::tuple<
     std::vector<std::size_t>,
     std::vector<std::size_t>,
@@ -169,18 +167,12 @@ std::tuple<
         std::vector<drake::geometry::optimization::HPolyhedron> regionsVCC;
 
         auto startTime{ std::chrono::steady_clock::now() };
-        while(true) {
-            try {
-                drake::planning::IrisInConfigurationSpaceFromCliqueCover(
-                    collisionChecker,
-                    irisFromCliqueCoverOptions,
-                    &drakeRandomGenerator,
-                    &regionsVCC
-                );
-
-                break;
-            } catch (...) {}
-        }
+        drake::planning::IrisInConfigurationSpaceFromCliqueCover(
+            collisionChecker,
+            irisFromCliqueCoverOptions,
+            &drakeRandomGenerator,
+            &regionsVCC
+        );
         auto endTime{ std::chrono::steady_clock::now() };
 
         RandomGenerator randomGenerator(domain, drakeRandomGenerator);
