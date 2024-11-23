@@ -22,7 +22,7 @@ namespace GBurIRIS::robots {
             const std::vector<double>& linkGeometryCompensation
         );
         virtual ~Robot() = default;
-        virtual std::vector<Eigen::Vector2d> getLinkPositions(const Eigen::VectorXd& qk) = 0;
+        virtual std::vector<Eigen::VectorXd> getLinkPositions(const Eigen::VectorXd& qk) = 0;
         virtual std::vector<double> getEnclosingRadii(const Eigen::VectorXd& qk) = 0;
         virtual double getMaxDisplacement(const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) = 0;
 

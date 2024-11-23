@@ -13,10 +13,10 @@ GBurIRIS::robots::PlanarArm::PlanarArm(
 
 
 
-std::vector<Eigen::Vector2d> GBurIRIS::robots::PlanarArm::getLinkPositions(const Eigen::VectorXd& qk) {
+std::vector<Eigen::VectorXd> GBurIRIS::robots::PlanarArm::getLinkPositions(const Eigen::VectorXd& qk) {
     auto&& previousConfig{ getCurrentConfiguration() };
 
-    std::vector<Eigen::Vector2d> linkPositions;
+    std::vector<Eigen::VectorXd> linkPositions;
 
     setConfiguration(qk);
 
