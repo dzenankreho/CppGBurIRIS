@@ -23,6 +23,7 @@
 #include "generalized_bur.hpp"
 #include "gbur_iris.hpp"
 #include "testing.hpp"
+#include "anthropomorphic_arm.hpp"
 
 
 class DrakeRandomGenerator {
@@ -90,8 +91,147 @@ private:
 //     return 0;
 // }
 
+/*
+    ([0, 0, 0], np.array([1.7, 1.7, 0.9])),
+    ([0, np.pi/2, 0], np.array([0.1, 1.7, 0.9])),*/
 
 int main() {
+    drake::planning::RobotDiagramBuilder<double> robotDiagramBuilder;
+    drake::multibody::MultibodyPlant<double>& plant{ robotDiagramBuilder.plant() };
+
+    std::string projectPath{ std::filesystem::current_path().parent_path().string() };
+
+    drake::multibody::Parser parser(&plant);
+    parser.package_map().Add("assets", projectPath + "/assets");
+    parser.AddModels(projectPath + "/scenes/3dofScene1.dmd.yaml");
+    plant.Finalize();
+
+    std::unique_ptr<drake::planning::RobotDiagram<double>> diagram{ robotDiagramBuilder.Build() };
+    std::unique_ptr<drake::systems::Context<double>> diagramContext{ diagram->CreateDefaultContext() };
+
+    drake::planning::CollisionCheckerParams collisionCheckerParams;
+    collisionCheckerParams.env_collision_padding =
+        drake::geometry::optimization::IrisOptions().configuration_space_margin;
+    collisionCheckerParams.model = std::move(diagram);
+    collisionCheckerParams.edge_step_size = 0.1;
+    collisionCheckerParams.robot_model_instances.push_back(plant.GetModelInstanceByName("AnthropomorphicArm"));
+
+    std::unique_ptr<drake::planning::CollisionChecker> collisionChecker{
+        std::make_unique<drake::planning::SceneGraphCollisionChecker>(std::move(collisionCheckerParams))
+    };
+
+    std::vector<std::reference_wrapper<const drake::multibody::RigidBody<double>>> jointChildAndEndEffectorLinks {
+        plant.GetBodyByName("AnthropomorphicArmLink1", plant.GetModelInstanceByName("AnthropomorphicArm")),
+        plant.GetBodyByName("AnthropomorphicArmLink2", plant.GetModelInstanceByName("AnthropomorphicArm")),
+        plant.GetBodyByName("AnthropomorphicArmLink3", plant.GetModelInstanceByName("AnthropomorphicArm")),
+        plant.GetBodyByName("AnthropomorphicArmEndEffector", plant.GetModelInstanceByName("AnthropomorphicArm"))
+    };
+
+    std::vector<double> linkGeometryCompensation(3, 0.1);
+
+    GBurIRIS::robots::AnthropomorphicArm anthropomorphicArm(*collisionChecker, jointChildAndEndEffectorLinks, linkGeometryCompensation);
+
+    for (auto r : anthropomorphicArm.getEnclosingRadii(Eigen::Vector3d(0, 0, 0))) {
+        std::cout << r << std::endl;
+    }
+
+}
+
+
+int main__() {
+    drake::planning::RobotDiagramBuilder<double> robotDiagramBuilder;
+    drake::multibody::MultibodyPlant<double>& plant{ robotDiagramBuilder.plant() };
+
+    std::string projectPath{ std::filesystem::current_path().parent_path().string() };
+
+    drake::multibody::Parser parser(&plant);
+    parser.package_map().Add("assets", projectPath + "/assets");
+    parser.AddModels(projectPath + "/scenes/6dofScene2.dmd.yaml");
+    plant.Finalize();
+
+    std::unique_ptr<drake::planning::RobotDiagram<double>> diagram{ robotDiagramBuilder.Build() };
+    std::unique_ptr<drake::systems::Context<double>> diagramContext{ diagram->CreateDefaultContext() };
+
+    drake::planning::CollisionCheckerParams collisionCheckerParams;
+    collisionCheckerParams.env_collision_padding =
+        drake::geometry::optimization::IrisOptions().configuration_space_margin;
+    collisionCheckerParams.model = std::move(diagram);
+    collisionCheckerParams.edge_step_size = 0.1;
+    collisionCheckerParams.robot_model_instances.push_back(plant.GetModelInstanceByName("6dofPlanarArm"));
+
+    std::unique_ptr<drake::planning::CollisionChecker> collisionChecker{
+        std::make_unique<drake::planning::SceneGraphCollisionChecker>(std::move(collisionCheckerParams))
+    };
+
+    std::vector<std::reference_wrapper<const drake::multibody::RigidBody<double>>> jointChildAndEndEffectorLinks {
+        plant.GetBodyByName("6dofPlanarLink1", plant.GetModelInstanceByName("6dofPlanarArm")),
+        plant.GetBodyByName("6dofPlanarLink2", plant.GetModelInstanceByName("6dofPlanarArm")),
+        plant.GetBodyByName("6dofPlanarLink3", plant.GetModelInstanceByName("6dofPlanarArm")),
+        plant.GetBodyByName("6dofPlanarLink4", plant.GetModelInstanceByName("6dofPlanarArm")),
+        plant.GetBodyByName("6dofPlanarLink5", plant.GetModelInstanceByName("6dofPlanarArm")),
+        plant.GetBodyByName("6dofPlanarLink6", plant.GetModelInstanceByName("6dofPlanarArm")),
+        plant.GetBodyByName("6dofPlanarEndEffector", plant.GetModelInstanceByName("6dofPlanarArm"))
+    };
+
+    std::vector<double> linkGeometryCompensation(6, 0.1);
+
+    GBurIRIS::robots::PlanarArm planarArm(*collisionChecker, jointChildAndEndEffectorLinks, linkGeometryCompensation);
+
+    int numOfRuns{ 1 };
+
+    GBurIRIS::GBurIRISConfig gBurIRISConfig;
+    gBurIRISConfig.coverage = 0.6;
+    gBurIRISConfig.numOfSpines = 12;
+
+//  789 56 0.6058
+//     GBurIRIS::testing::TestGBurIRIS testGBurIRIS(planarArm, gBurIRISConfig);
+//     auto [execTimeGBurIRIS, numOfRegionsGBurIRIS, coverageGBurIRIS] = testGBurIRIS.run(numOfRuns);
+
+
+// 447 30 0.6074
+//     GBurIRIS::testing::TestGBurIRIS testGBurIRIS2(
+//         planarArm,
+//         gBurIRISConfig,
+//         GBurIRIS::testing::TestGBurIRIS::GBurDistantConfigOption::rotationMatrix
+//     );
+//     auto [execTimeGBurIRIS2, numOfRegionsGBurIRIS2, coverageGBurIRIS2] = testGBurIRIS2.run(numOfRuns);
+
+// 684 24 0.5472
+    drake::planning::IrisFromCliqueCoverOptions irisFromCliqueCoverOptions;
+    irisFromCliqueCoverOptions.coverage_termination_threshold = 0.6;
+    irisFromCliqueCoverOptions.num_points_per_visibility_round = 500;
+    irisFromCliqueCoverOptions.num_points_per_coverage_check = 5000;
+    irisFromCliqueCoverOptions.minimum_clique_size = 10;
+
+
+//     drake::RandomGenerator drakeRandomGenerator(0);
+//     std::vector<drake::geometry::optimization::HPolyhedron> regionsVCC;
+//     drake::planning::IrisInConfigurationSpaceFromCliqueCover(
+//         *collisionChecker,
+//         irisFromCliqueCoverOptions,
+//         &drakeRandomGenerator,
+//         &regionsVCC
+//     );
+
+    GBurIRIS::testing::TestVCC testVCC(planarArm, irisFromCliqueCoverOptions);
+    auto [execTimeVCC, numOfRegionsVCC, coverageVCC] = testVCC.run(numOfRuns);
+
+
+    std::cout /*<< testGBurIRIS.calculateMean(execTimeGBurIRIS) << " "
+              << testGBurIRIS.calculateMean(numOfRegionsGBurIRIS) << " "
+              << testGBurIRIS.calculateMean(coverageGBurIRIS) << std::endl*/
+//               << testGBurIRIS2.calculateMean(execTimeGBurIRIS2) << " "
+//               << testGBurIRIS2.calculateMean(numOfRegionsGBurIRIS2) << " "
+//               << testGBurIRIS2.calculateMean(coverageGBurIRIS2) << std::endl
+              << testVCC.calculateMean(execTimeVCC) << " "
+              << testVCC.calculateMean(numOfRegionsVCC) << " "
+              << testVCC.calculateMean(coverageVCC) << std::endl;
+
+    return 0;
+}
+
+
+int main_() {
     drake::planning::RobotDiagramBuilder<double> robotDiagramBuilder;
     drake::multibody::MultibodyPlant<double>& plant{ robotDiagramBuilder.plant() };
 
