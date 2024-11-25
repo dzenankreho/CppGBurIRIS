@@ -46,7 +46,9 @@ drake::geometry::optimization::Hyperellipsoid GBurIRIS::MinVolumeEllipsoid(
     double minDistance{ (points.at(closestPoint) - ellipsoid.center()).norm() };
 
     for (int i{ 1 }; i < points.size(); ++i) {
-        if (double currentDistance{ (points.at(i) - ellipsoid.center()).norm() }; currentDistance < minDistance) {
+        if (double currentDistance{ (points.at(i) - ellipsoid.center()).norm() }; currentDistance < minDistance &&
+            collisionChecker.CheckConfigCollisionFree(points.at(i))
+        ) {
             minDistance = currentDistance;
             closestPoint = i;
         }
