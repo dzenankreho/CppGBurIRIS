@@ -34,19 +34,35 @@ drake::geometry::optimization::Hyperellipsoid GBurIRIS::MinVolumeEllipsoid(
         pointsMatrix.col(i) = points.at(i);
     }
 
-    auto ellipsoid{
-        drake::geometry::optimization::Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(pointsMatrix)
+    auto affineBall {
+        drake::geometry::optimization::AffineBall::MinimumVolumeCircumscribedEllipsoid(pointsMatrix)
     };
 
-    if (collisionChecker.CheckConfigCollisionFree(ellipsoid.center())) {
-        return ellipsoid;
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(affineBall.B(), Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::MatrixXd U{ svd.matrixU() };
+    Eigen::MatrixXd S{ svd.singularValues().asDiagonal() };
+    Eigen::MatrixXd V{ svd.matrixV() };
+
+    for (int i{}; i < S.size(); ++i) {
+        if (S(i) < 1e-4) {
+            S(i) = 1e-4;
+        }
+    }
+
+    Eigen::MatrixXd newB{ U * S * V.transpose() };
+    Eigen::VectorXd ellipsoidCenter{ affineBall.center() };
+
+    if (collisionChecker.CheckConfigCollisionFree(ellipsoidCenter)) {
+        return drake::geometry::optimization::Hyperellipsoid{
+            drake::geometry::optimization::AffineBall{ newB, ellipsoidCenter }
+        };
     }
 
     int closestPoint{};
-    double minDistance{ (points.at(closestPoint) - ellipsoid.center()).norm() };
+    double minDistance{ (points.at(closestPoint) - ellipsoidCenter).norm() };
 
     for (int i{ 1 }; i < points.size(); ++i) {
-        if (double currentDistance{ (points.at(i) - ellipsoid.center()).norm() }; currentDistance < minDistance &&
+        if (double currentDistance{ (points.at(i) - ellipsoidCenter).norm() }; currentDistance < minDistance &&
             collisionChecker.CheckConfigCollisionFree(points.at(i))
         ) {
             minDistance = currentDistance;
@@ -54,7 +70,9 @@ drake::geometry::optimization::Hyperellipsoid GBurIRIS::MinVolumeEllipsoid(
         }
     }
 
-    return drake::geometry::optimization::Hyperellipsoid(ellipsoid.A(), points.at(closestPoint));
+    return drake::geometry::optimization::Hyperellipsoid{
+        drake::geometry::optimization::AffineBall{ newB, points.at(closestPoint) }
+    };
 }
 
 
@@ -169,18 +187,9 @@ std::tuple<
             outerLayer.push_back(*(spine.end() - 1));
         }
 
-        drake::geometry::optimization::Hyperellipsoid ellipsoid;
-        try {
-            ellipsoid = GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer);
-        } catch (const std::runtime_error& exception) {
-            if (std::string(exception.what()) != minVolEllipsoidRankErrorStr) {
-                throw;
-            }
-
-            burs.pop_back();
-            --i;
-            continue;
-        }
+        drake::geometry::optimization::Hyperellipsoid ellipsoid{
+            GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer)
+        };
 
         try {
             regions.push_back(GBurIRIS::InflatePolytope(collisionChecker, ellipsoid));
