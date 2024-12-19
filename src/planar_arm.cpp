@@ -20,7 +20,7 @@ std::vector<Eigen::VectorXd> GBurIRIS::robots::PlanarArm::getLinkPositions(const
 
     setConfiguration(qk);
 
-    for (auto&& linkBody : jointChildAndEndEffectorLinks) {
+    for (const auto& linkBody : jointChildAndEndEffectorLinks) {
         linkPositions.push_back(plant.EvalBodyPoseInWorld(plantContext, linkBody).translation()(Eigen::seq(0, 1)));
     }
 
