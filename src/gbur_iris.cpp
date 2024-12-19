@@ -22,6 +22,8 @@ drake::geometry::optimization::Hyperellipsoid GBurIRIS::MinVolumeEllipsoid(
     const std::vector<Eigen::VectorXd>& points
 ) {
 
+
+
     Eigen::MatrixXd pointsMatrix(points.begin()->size(), points.size());
     for (int i{}; i < points.size(); ++i) {
         pointsMatrix.col(i) = points.at(i);
@@ -31,18 +33,26 @@ drake::geometry::optimization::Hyperellipsoid GBurIRIS::MinVolumeEllipsoid(
         drake::geometry::optimization::AffineBall::MinimumVolumeCircumscribedEllipsoid(pointsMatrix)
     };
 
+//     return drake::geometry::optimization::Hyperellipsoid{ affineBall };
+
+
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(affineBall.B(), Eigen::ComputeFullU | Eigen::ComputeFullV);
     Eigen::MatrixXd U{ svd.matrixU() };
     Eigen::MatrixXd S{ svd.singularValues().asDiagonal() };
     Eigen::MatrixXd V{ svd.matrixV() };
 
     for (int i{}; i < S.size(); ++i) {
-        if (S(i) < 1e-4) {
-            S(i) = 1e-4;
+        if (S(i) < 1e-3) {
+            S(i) = 1e-3;
         }
     }
 
     Eigen::MatrixXd newB{ U * S * V.transpose() };
+
+    if (std::abs(newB.determinant()) < 1e-9) {
+        throw std::runtime_error("Points are too close!");
+    }
+
     Eigen::VectorXd ellipsoidCenter{ affineBall.center() };
 
     if (collisionChecker.CheckConfigCollisionFree(ellipsoidCenter)) {
@@ -180,9 +190,17 @@ std::tuple<
             outerLayer.push_back(*(spine.end() - 1));
         }
 
-        drake::geometry::optimization::Hyperellipsoid ellipsoid{
-            GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer)
-        };
+        drake::geometry::optimization::Hyperellipsoid ellipsoid;
+        try {
+            ellipsoid = GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer);
+        } catch (const std::runtime_error& exception) {
+            if (std::string(exception.what()) != "Points are too close!") {
+                throw;
+            }
+
+            --i;
+            continue;
+        }
 
         try {
             regions.push_back(GBurIRIS::InflatePolytope(collisionChecker, ellipsoid));
@@ -275,9 +293,17 @@ std::tuple<
             outerLayer.push_back(*(spine.end() - 1));
         }
 
-        drake::geometry::optimization::Hyperellipsoid ellipsoid{
-            GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer)
-        };
+        drake::geometry::optimization::Hyperellipsoid ellipsoid;
+        try {
+            ellipsoid = GBurIRIS::MinVolumeEllipsoid(collisionChecker, outerLayer);
+        } catch (const std::runtime_error& exception) {
+            if (std::string(exception.what()) != "Points are too close!") {
+                throw;
+            }
+
+            --i;
+            continue;
+        }
 
         try {
             regions.push_back(GBurIRIS::InflatePolytope(collisionChecker, ellipsoid));
