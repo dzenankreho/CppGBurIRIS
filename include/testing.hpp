@@ -89,6 +89,6 @@ namespace GBurIRIS::testing {
         std::vector<double> diff(data.size());
         std::transform(data.begin(), data.end(), diff.begin(), [mean](const T& t) { return double(t) - mean; });
 
-        return std::sqrt(std::inner_product(diff.begin(), diff.end(), diff.begin(), T{}) / data.size());
+        return std::sqrt(std::inner_product(diff.begin(), diff.end(), diff.begin(), double{}) / data.size());
     }
 };
